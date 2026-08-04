@@ -227,15 +227,12 @@ pub struct Metadata {
     sheets: Vec<Sheet>,
     /// Map of sheet names/sheet path within zip archive
     names: Vec<(String, String)>,
-    /// Workbook properties (core and extended)
-    pub(crate) workbook_properties: WorkbookProperties,
 }
 
 /// Workbook document properties.
 ///
-/// These properties correspond to the core document properties
-/// (`docProps/core.xml`) and extended file properties
-/// (`docProps/app.xml`) found in XLSX packages.
+/// Depending on the file format, these fields may be read from workbook-level
+/// document property parts.
 ///
 /// Most fields are optional because they depend on the file format and
 /// whether the producing application wrote them.
@@ -379,11 +376,9 @@ impl CustomPropertyValue {
     #[cfg(feature = "chrono")]
     pub fn as_datetime(&self) -> Option<chrono::NaiveDateTime> {
         match self {
-            CustomPropertyValue::DateTime(s) => {
-                chrono::DateTime::parse_from_rfc3339(s)
-                    .ok()
-                    .map(|dt| dt.naive_utc())
-            }
+            CustomPropertyValue::DateTime(s) => chrono::DateTime::parse_from_rfc3339(s)
+                .ok()
+                .map(|dt| dt.naive_utc()),
             _ => None,
         }
     }
@@ -399,13 +394,6 @@ impl fmt::Display for CustomPropertyValue {
             | CustomPropertyValue::String(v)
             | CustomPropertyValue::LinkTarget(v) => write!(f, "{v}"),
         }
-    }
-}
-
-impl Metadata {
-    /// Returns the workbook document properties.
-    pub fn workbook_properties(&self) -> &WorkbookProperties {
-        &self.workbook_properties
     }
 }
 

@@ -35,4 +35,3 @@ This directory contains some example of Calamine usage.
 - `deserialize_seed.rs`: Demonstrates stateful deserialization using
   [`RowDeserializer`] and [`DeserializeSeed`] for cases where column names are
   only known at runtime or deserialization depends on runtime context.
-

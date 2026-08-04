@@ -265,6 +265,8 @@ pub struct Xlsx<RS> {
     is_1904: bool,
     /// Metadata
     metadata: Metadata,
+    /// Workbook document properties, parsed lazily on first access.
+    workbook_properties: Option<Box<WorkbookProperties>>,
     /// Pictures
     #[cfg(feature = "picture")]
     pictures: Option<Vec<Picture>>,
@@ -547,13 +549,21 @@ impl<RS: Read + Seek> Xlsx<RS> {
         Ok(())
     }
 
-    fn read_properties(&mut self) -> Result<(), XlsxError> {
-        let mut core = WorkbookProperties::default();
-        read_core_properties(&mut self.zip, &mut core, &self.zip_path_cache)?;
-        read_app_properties(&mut self.zip, &mut core, &self.zip_path_cache)?;
-        read_custom_properties(&mut self.zip, &mut core, &self.zip_path_cache)?;
-        self.metadata.workbook_properties = core;
-        Ok(())
+    /// Get workbook document properties.
+    ///
+    /// Missing fields are returned as `None`.
+    pub fn workbook_properties(&mut self) -> Result<&WorkbookProperties, XlsxError> {
+        if self.workbook_properties.is_none() {
+            let mut props = WorkbookProperties::default();
+            read_core_properties(&mut self.zip, &mut props, &self.zip_path_cache)?;
+            read_app_properties(&mut self.zip, &mut props, &self.zip_path_cache)?;
+            read_custom_properties(&mut self.zip, &mut props, &self.zip_path_cache)?;
+            self.workbook_properties = Some(Box::new(props));
+        }
+        Ok(self
+            .workbook_properties
+            .as_deref()
+            .expect("workbook properties are initialized above"))
     }
 
     fn read_relationships(&mut self) -> Result<HashMap<Vec<u8>, (String, String)>, XlsxError> {
@@ -2561,6 +2571,7 @@ impl<RS: Read + Seek> Reader<RS> for Xlsx<RS> {
             sheets: Vec::new(),
             tables: None,
             metadata: Metadata::default(),
+            workbook_properties: None,
             #[cfg(feature = "picture")]
             pictures: None,
             merged_regions: None,
@@ -2572,7 +2583,6 @@ impl<RS: Read + Seek> Reader<RS> for Xlsx<RS> {
         xlsx.read_styles()?;
         let relationships = xlsx.read_relationships()?;
         xlsx.read_workbook(&relationships)?;
-        xlsx.read_properties()?;
         #[cfg(feature = "picture")]
         xlsx.read_pictures()?;
 
@@ -4578,6 +4588,7 @@ mod tests {
             formats: vec![],
             is_1904: false,
             metadata: Metadata::default(),
+            workbook_properties: None,
             #[cfg(feature = "picture")]
             pictures: None,
             merged_regions: None,
@@ -4649,7 +4660,9 @@ pub(crate) fn read_core_properties<RS: Read + Seek>(
                         DocProperty::Description => props.description = Some(value.into_owned()),
                         DocProperty::Keywords => props.keywords = Some(value.into_owned()),
                         DocProperty::Category => props.category = Some(value.into_owned()),
-                        DocProperty::ContentStatus => props.content_status = Some(value.into_owned()),
+                        DocProperty::ContentStatus => {
+                            props.content_status = Some(value.into_owned())
+                        }
                         DocProperty::Revision => props.revision = Some(value.into_owned()),
                         DocProperty::Version => props.version = Some(value.into_owned()),
                         DocProperty::Application => props.application = Some(value.into_owned()),
@@ -4836,9 +4849,7 @@ impl CustomPropState {
             CustomPropKind::Int => value.parse().ok().map(CustomPropertyValue::Int),
             CustomPropKind::Float => value.parse().ok().map(CustomPropertyValue::Float),
             CustomPropKind::Bool => Some(CustomPropertyValue::Bool(parse_bool(value))),
-            CustomPropKind::DateTime => {
-                Some(CustomPropertyValue::DateTime(value.to_string()))
-            }
+            CustomPropKind::DateTime => Some(CustomPropertyValue::DateTime(value.to_string())),
             CustomPropKind::String => {
                 if let Some(target) = self.link_target {
                     Some(CustomPropertyValue::LinkTarget(target))

@@ -2,7 +2,7 @@
 //
 // Copyright 2016-2026, Johann Tuffe.
 
-//! Demonstrates reading workbook properties from an XLSX or XLSB file.
+//! Demonstrates reading workbook properties from an XLSX file.
 //!
 //! This example reads the core and extended properties (such as creator,
 //! application, and company) as well as any custom document properties stored
@@ -34,19 +34,19 @@
 //!   MyLink: SomeName (vt:lpwstr)
 //! ```
 
-use calamine::{open_workbook_auto, Reader};
+use calamine::open_workbook_auto;
 use std::env;
 use std::process::exit;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: {} <xlsx/xlsb path>", args[0]);
+        eprintln!("Usage: {} <xlsx path>", args[0]);
         exit(1);
     }
 
     let path = &args[1];
-    let excel = match open_workbook_auto(path) {
+    let mut excel = match open_workbook_auto(path) {
         Ok(excel) => excel,
         Err(e) => {
             eprintln!("Cannot open {path}: {e}");
@@ -54,7 +54,13 @@ fn main() {
         }
     };
 
-    let props = excel.metadata().workbook_properties();
+    let props = match excel.workbook_properties() {
+        Ok(props) => props,
+        Err(e) => {
+            eprintln!("Cannot read workbook properties from {path}: {e}");
+            exit(1);
+        }
+    };
 
     println!("Core / Extended properties:");
     println!("  creator: {:?}", props.creator);

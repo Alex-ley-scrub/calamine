@@ -3611,8 +3611,8 @@ fn test_xlsx_strict_iso_paths() {
 
 #[test]
 fn test_xlsx_workbook_properties() {
-    let excel: Xlsx<_> = wb("workbook_properties.xlsx");
-    let props = excel.metadata().workbook_properties();
+    let mut excel: Xlsx<_> = wb("workbook_properties.xlsx");
+    let props = excel.workbook_properties().expect("workbook properties");
 
     assert_eq!(props.creator.as_deref(), Some("Test Creator"));
     assert_eq!(props.last_modified_by.as_deref(), Some("Last Modifier"));
@@ -3635,8 +3635,8 @@ fn test_xlsx_workbook_properties() {
 
 #[test]
 fn test_xlsx_workbook_properties_missing() {
-    let excel: Xlsx<_> = wb("workbook_properties_missing.xlsx");
-    let props = excel.metadata().workbook_properties();
+    let mut excel: Xlsx<_> = wb("workbook_properties_missing.xlsx");
+    let props = excel.workbook_properties().expect("workbook properties");
 
     assert!(props.creator.is_none());
     assert!(props.last_modified_by.is_none());
@@ -3646,8 +3646,8 @@ fn test_xlsx_workbook_properties_missing() {
 
 #[test]
 fn test_xlsx_custom_properties() {
-    let excel: Xlsx<_> = wb("workbook_custom_properties.xlsx");
-    let props = excel.metadata().workbook_properties();
+    let mut excel: Xlsx<_> = wb("workbook_custom_properties.xlsx");
+    let props = excel.workbook_properties().expect("workbook properties");
     let custom = &props.custom_properties;
 
     assert_eq!(
@@ -3696,14 +3696,29 @@ fn test_xlsx_custom_properties() {
         custom.get("MyDateTime").map(|v| v.vt_type()),
         Some("vt:filetime")
     );
-    assert_eq!(
-        custom.get("MyLink").map(|v| v.vt_type()),
-        Some("vt:lpwstr")
-    );
+    assert_eq!(custom.get("MyLink").map(|v| v.vt_type()), Some("vt:lpwstr"));
     assert_eq!(
         custom.get("MyString").map(|v| v.to_string()),
         Some("hello".to_string())
     );
+}
+
+#[test]
+fn test_xlsb_workbook_properties() {
+    let mut excel: Xlsb<_> = wb("issues.xlsb");
+    let props = excel.workbook_properties().expect("workbook properties");
+
+    assert_eq!(
+        props.creator.as_deref(),
+        Some("Johann Tuffe (jtuffe010814)")
+    );
+    assert_eq!(
+        props.last_modified_by.as_deref(),
+        Some("Johann Tuffe (jtuffe010814)")
+    );
+    assert_eq!(props.application.as_deref(), Some("Microsoft Excel"));
+    assert_eq!(props.app_version.as_deref(), Some("16.0300"));
+    assert_eq!(props.company.as_deref(), Some("SOCIETE GENERALE"));
 }
 
 #[test]
