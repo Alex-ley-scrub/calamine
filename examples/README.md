@@ -16,8 +16,8 @@ This directory contains some example of Calamine usage.
 - `read_hyperlinks.rs`: Reads the hyperlinks defined in an XLSX worksheet,
   either by sheet name or by sheet index.
 - `read_picture_data.rs`: Reads pictures and their metadata from an XLSX file.
-- `read_properties.rs`: Reads the workbook properties (core and extended)
-  from an XLSX or XLSB file.
+- `read_properties.rs`: Reads the workbook properties (core, extended, and custom)
+  from an XLSX file.
 
 ### Serialization examples
 
@@ -35,4 +35,3 @@ This directory contains some example of Calamine usage.
 - `deserialize_seed.rs`: Demonstrates stateful deserialization using
   [`RowDeserializer`] and [`DeserializeSeed`] for cases where column names are
   only known at runtime or deserialization depends on runtime context.
-
