@@ -3567,6 +3567,27 @@ fn test_whitespace_trim_shared_strings() {
     );
 }
 
+// An unmatched workbook-global record whose body is left unconsumed desyncs the
+// BIFF12 record stream: the next `read_type()` misreads the record's size-varint
+// bytes as the next record id. Both fixtures hold a single "Sheet1" worksheet
+// preceded by such a record; without consuming its body the sheet is either lost
+// or the reader panics. See issue #666.
+#[test]
+fn test_xlsb_unmatched_workbook_record_does_not_lose_sheet() {
+    // The unmatched record's body size varint starts with `0x90`, which the
+    // desynced reader misreads as `BrtEndBundleShs` and stops before any sheet.
+    let xlsb: Xlsb<_> = wb("issue_666_lost_sheets.xlsb");
+    assert_eq!(xlsb.sheet_names(), vec!["Sheet1".to_string()]);
+}
+
+#[test]
+fn test_xlsb_unmatched_workbook_record_does_not_panic() {
+    // The unmatched record's body size varint starts with `0x9C`, which the
+    // desynced reader misreads as `BrtBundleSh` and decodes from an empty buffer.
+    let xlsb: Xlsb<_> = wb("issue_666_panic.xlsb");
+    assert_eq!(xlsb.sheet_names(), vec!["Sheet1".to_string()]);
+}
+
 #[test]
 fn too_small_xls() {
     let path = test_path("too_small.xls");
@@ -3586,4 +3607,65 @@ fn too_small_xls() {
 #[test]
 fn test_xlsx_strict_iso_paths() {
     let _: Xlsx<_> = wb("strict_iso_paths.xlsx");
+}
+
+#[test]
+fn test_xlsx_workbook_properties() {
+    let mut excel: Xlsx<_> = wb("workbook_properties.xlsx");
+    let props = excel.workbook_properties().expect("workbook properties");
+
+    assert_eq!(props.creator.as_deref(), Some("Test Creator"));
+    assert_eq!(props.last_modified_by.as_deref(), Some("Last Modifier"));
+    assert_eq!(props.created.as_deref(), Some("2024-01-15T08:30:00Z"));
+    assert_eq!(props.modified.as_deref(), Some("2024-06-20T14:22:00Z"));
+    assert_eq!(props.title.as_deref(), Some("Workbook Title"));
+    assert_eq!(props.subject.as_deref(), Some("Test Subject"));
+    assert_eq!(props.description.as_deref(), Some("A test workbook"));
+    assert_eq!(props.keywords.as_deref(), Some("test, calamine"));
+    assert_eq!(props.category.as_deref(), Some("Testing"));
+    assert_eq!(props.content_status.as_deref(), Some("Draft"));
+    assert_eq!(props.revision.as_deref(), Some("3"));
+    assert_eq!(props.version.as_deref(), Some("1.2"));
+    assert_eq!(props.application.as_deref(), Some("Microsoft Excel"));
+    assert_eq!(props.app_version.as_deref(), Some("16.0300"));
+    assert_eq!(props.company.as_deref(), Some("Contoso"));
+    assert_eq!(props.template.as_deref(), Some("Book.xltx"));
+    assert_eq!(props.manager.as_deref(), Some("Jane Doe"));
+}
+
+#[test]
+fn test_xlsx_workbook_properties_missing() {
+    let mut excel: Xlsx<_> = wb("workbook_properties_missing.xlsx");
+    let props = excel.workbook_properties().expect("workbook properties");
+
+    assert!(props.creator.is_none());
+    assert!(props.last_modified_by.is_none());
+    assert!(props.application.is_none());
+    assert!(props.company.is_none());
+}
+
+#[test]
+fn test_xlsb_workbook_properties() {
+    let mut excel: Xlsb<_> = wb("issues.xlsb");
+    let props = excel.workbook_properties().expect("workbook properties");
+
+    assert_eq!(
+        props.creator.as_deref(),
+        Some("Johann Tuffe (jtuffe010814)")
+    );
+    assert_eq!(
+        props.last_modified_by.as_deref(),
+        Some("Johann Tuffe (jtuffe010814)")
+    );
+    assert_eq!(props.application.as_deref(), Some("Microsoft Excel"));
+    assert_eq!(props.app_version.as_deref(), Some("16.0300"));
+    assert_eq!(props.company.as_deref(), Some("SOCIETE GENERALE"));
+}
+
+#[test]
+fn xls_empty_string() {
+    // Empty strings should be retained, not converted to None. See issue #678
+    let mut wb: Xls<_> = wb("empty-string.xls");
+    let range = wb.worksheet_range("Sheet1").unwrap();
+    assert_eq!(range.get_value((0, 0)), Some(&String("".to_string())));
 }
