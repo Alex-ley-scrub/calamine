@@ -4,16 +4,15 @@
 
 //! Demonstrates reading workbook properties from an XLSX file.
 //!
-//! This example reads the core and extended properties (such as creator,
-//! application, and company) as well as any custom document properties stored
-//! in `docProps/custom.xml`.
+//! This example reads the document properties (such as creator, application,
+//! and company) as well as any custom document properties.
 //!
 //! Run the example like this:
 //!
 //! ```text
 //! $ cargo run -q --example read_properties -- tests/workbook_custom_properties.xlsx
 //!
-//! Core / Extended properties:
+//! Workbook properties:
 //!   creator: Some("Test Creator")
 //!   last_modified_by: Some("Last Modifier")
 //!   created: Some("2024-01-15T08:30:00Z")
@@ -62,7 +61,7 @@ fn main() {
         }
     };
 
-    println!("Core / Extended properties:");
+    println!("Workbook properties:");
     println!("  creator: {:?}", props.creator);
     println!("  last_modified_by: {:?}", props.last_modified_by);
     println!("  created: {:?}", props.created);
