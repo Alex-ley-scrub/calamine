@@ -290,13 +290,13 @@ pub struct WorkbookProperties {
     /// Manager (ap:Manager).
     pub manager: Option<String>,
 
-    /// Custom document properties from `docProps/custom.xml`.
+    /// Custom document properties.
     pub custom_properties: HashMap<String, CustomPropertyValue>,
 }
 
-/// A custom document property value from `docProps/custom.xml`.
+/// A custom document property value.
 ///
-/// Custom properties are user-defined key/value pairs stored in an XLSX file.
+/// Custom properties are user-defined key/value pairs stored in a workbook.
 /// The supported value types correspond to the most common `vt:*` variants
 /// produced by Excel and other spreadsheet applications.
 #[derive(Debug, Clone, PartialEq)]
