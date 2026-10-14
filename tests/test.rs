@@ -3725,6 +3725,17 @@ fn test_xlsx_custom_properties() {
 }
 
 #[test]
+fn test_xlsb_custom_properties() {
+    let mut excel: Xlsb<_> = wb("issue_182.xlsb");
+    let props = excel.workbook_properties().expect("workbook properties");
+
+    assert_eq!(
+        props.custom_properties.get("FileName"),
+        Some(&CustomPropertyValue::String("".to_string()))
+    );
+}
+
+#[test]
 fn test_xlsb_workbook_properties() {
     let mut excel: Xlsb<_> = wb("issues.xlsb");
     let props = excel.workbook_properties().expect("workbook properties");

@@ -4737,7 +4737,7 @@ enum DocProperty {
 }
 
 /// Read the package custom properties (`docProps/custom.xml`).
-fn read_custom_properties<RS: Read + Seek>(
+pub(crate) fn read_custom_properties<RS: Read + Seek>(
     zip: &mut ZipArchive<RS>,
     props: &mut WorkbookProperties,
     cache: &HashMap<String, String>,
